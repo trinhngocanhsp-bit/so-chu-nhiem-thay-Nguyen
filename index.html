@@ -9,8 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     
     <!-- ============================================================ -->
-    <!-- ĐẶT MÃ KÉT SẮT RIÊNG CHO TỪNG LỚP Ở ĐÂY (Vd: LOP_01, LOP_02...) -->
-    <script> const MA_DU_LIEU = "LOP_10A7"; </script>
+    <!-- ĐẶT MÃ KÉT SẮT RIÊNG CHO TỪNG LỚP Ở ĐÂY (Vd: LOP_01, 10A4...) -->
+    <script> const MA_DU_LIEU = "10A7"; </script>
     <!-- ============================================================ -->
 
     <!-- FIREBASE -->
@@ -21,24 +21,16 @@
     
     <style>
     @media (max-width: 600px) {
-        /* Căn chỉnh cỡ chữ toàn trang cho điện thoại */
         body { font-size: 14px !important; }
         table, th, td { font-size: 13px !important; }
         button, select, input { font-size: 14px !important; }
-
-        /* Thu gọn khung popup Sao kê */
         .auth-card, #detailModal .auth-card {
             width: 95% !important;
             max-width: 400px !important;
             padding: 14px !important;
         }
-        #detail-modal-title {
-            font-size: 1.05rem !important;
-        }
-        #detail-modal-content {
-            font-size: 0.9rem !important;
-        }
-        /* Phá vỡ 600px, ép bảng vừa khít điện thoại */
+        #detail-modal-title { font-size: 1.05rem !important; }
+        #detail-modal-content { font-size: 0.9rem !important; }
         #detail-modal-content table {
             font-size: 13px !important;
             min-width: 100% !important; 
@@ -105,18 +97,16 @@
         .seating-grid-wrapper { display: flex; justify-content: center; gap: 24px; margin-bottom: 12px; width: 840px; }
         .col-group { display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 8px; flex: 1; min-width: 380px; }
         
-        /* CẤU HÌNH MÀU NỀN 4 TỔ RÕ RỆT (ĐÃ ÉP !important ĐỂ KHÔNG BỊ GHI ĐÈ) */
-        .group-tto-1 { border: 2.5px solid #ca8a04 !important; background-color: #fef08a !important; } /* Tổ 1: Vàng đậm */
-        .group-tto-2 { border: 2.5px solid #d97706 !important; background-color: #fed7aa !important; } /* Tổ 2: Cam sáng / Kem */
-        .group-tto-3 { border: 2.5px solid #475569 !important; background-color: #cbd5e1 !important; } /* Tổ 3: Xám đậm */
-        .group-tto-4 { border: 2.5px solid #16a34a !important; background-color: #bbf7d0 !important; } /* Tổ 4: Xanh lá */
+        .group-tto-1 { border: 2.5px solid #ca8a04 !important; background-color: #fef08a !important; } 
+        .group-tto-2 { border: 2.5px solid #d97706 !important; background-color: #fed7aa !important; } 
+        .group-tto-3 { border: 2.5px solid #475569 !important; background-color: #cbd5e1 !important; } 
+        .group-tto-4 { border: 2.5px solid #16a34a !important; background-color: #bbf7d0 !important; } 
 
         .seat-row { display: flex; gap: 4px; padding: 5px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.15); justify-content: center; margin-bottom: 4px; }
         .seat-box { width: 85px; height: 55px; border: 1px solid #64748b; background: #ffffff; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 2px; position: relative; transition: 0.2s; cursor: pointer; }
         .seat-box:hover { border-color: #ea580c; background: #fff7ed;}
         .seat-box.selected-seat { border: 2px solid #ea580c; background: #fff7ed; transform: scale(1.05); z-index: 10;}
         .seat-name { font-size: 0.6rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; line-height: 1.2; margin-top: 2px; color: #0f172a; }
-        
         .seat-box.empty-seat { background: #f8fafc; border: 1px dashed #94a3b8; opacity: 0.6; }
         .seat-box.empty-seat .seat-name { font-size: 0.55rem; color: #64748b; font-weight: 500; font-style: italic; }
 
@@ -207,7 +197,6 @@
                         <div class="seating-scroll-area">
                             <div class="seating-grid-wrapper" id="seating-map-grid-container"></div>
                             
-                            <!-- BẢNG LỚP ĐÃ ĐƯỢC CHUYỂN XUỐNG DƯỚI CÙNG KÈM MŨI TÊN HƯỚNG LÊN -->
                             <div style="margin-top: 14px; text-align: center;">
                                 <div style="display:inline-block; min-width: 280px; background:#1e3a8a; color:#fff; padding: 8px 16px; border-radius: 6px; font-weight: 800; font-size: 0.9rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                                     <i class="fa-solid fa-arrow-up mr-2" style="color:#fde047;"></i> <i class="fa-solid fa-chalkboard"></i> BẢNG LỚP
@@ -281,7 +270,6 @@
         <!-- TAB 4: QUẢN TRỊ -->
         <div id="panel-tab4" class="view-panel">
             <div class="card">
-                <!-- Cấu hình hệ thống động -->
                 <div style="background:#eff6ff; border:1.5px solid #3b82f6; padding:12px; border-radius:10px; margin-bottom:14px;">
                     <h4 style="color:#1e40af; font-size:0.95rem; margin-bottom:10px;"><i class="fa-solid fa-gears"></i> CẤU HÌNH HỆ THỐNG</h4>
                     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:10px; margin-bottom:10px;">
@@ -342,11 +330,26 @@
                     <div style="max-height:260px; overflow-y:auto; border:1px solid #cbd5e1; border-radius:6px; padding:6px; background:#f8fafc;" id="admin-student-list-container"></div>
                 </div>
 
+                <!-- KHU VỰC SƠ ĐỒ & HOÁN ĐỔI TỔ -->
                 <div style="background:#fff; border:1.5px solid #d97706; padding:12px; border-radius:10px; margin-bottom: 14px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
                         <h4 style="color:#b45309; font-size:0.95rem; margin:0;"><i class="fa-solid fa-chair"></i> SƠ ĐỒ LỚP & ĐỔI CHỖ</h4>
                         <button onclick="resetDataToFactory()" style="background:#dc2626; color:#fff; border:none; padding:4px 8px; border-radius:6px; font-weight:700; font-size:0.72rem; cursor:pointer;"><i class="fa-solid fa-rotate-left"></i> Khôi phục dữ liệu gốc</button>
                     </div>
+
+                    <!-- KHUNG HOÁN ĐỔI NGUYÊN TỔ (MỚI BỔ SUNG) -->
+                    <div style="background:#fffbeb; border:1px solid #fde047; padding:8px 10px; border-radius:8px; margin-bottom:10px; display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                        <span style="font-weight:700; font-size:0.78rem; color:#92400e;"><i class="fa-solid fa-right-left"></i> Đổi chỗ nguyên Tổ:</span>
+                        <select id="swap-group-1" style="padding:4px; border-radius:6px; border:1px solid #d97706; font-size:0.78rem; width:auto; font-weight:bold;">
+                            <option value="1">Tổ 1</option><option value="2">Tổ 2</option><option value="3">Tổ 3</option><option value="4">Tổ 4</option>
+                        </select>
+                        <span style="font-weight:bold; font-size:0.78rem;">với</span>
+                        <select id="swap-group-2" style="padding:4px; border-radius:6px; border:1px solid #d97706; font-size:0.78rem; width:auto; font-weight:bold;">
+                            <option value="1">Tổ 1</option><option value="2" selected>Tổ 2</option><option value="3">Tổ 3</option><option value="4">Tổ 4</option>
+                        </select>
+                        <button class="btn-action" style="background:#d97706; padding:4px 10px; font-size:0.75rem;" onclick="swapEntireGroups()"><i class="fa-solid fa-shuffle"></i> Thực hiện đổi</button>
+                    </div>
+
                     <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom: 10px;">
                         <button class="btn-action" style="background:#16a34a; padding:6px 10px;" onclick="autoSuggestSeating()"><i class="fa-solid fa-lightbulb"></i> Gợi ý xếp chỗ</button>
                         <button class="btn-action" style="background:#0284c7; padding:6px 10px;" onclick="autoShuffleWithinGroups()"><i class="fa-solid fa-shuffle"></i> Đảo (Tổ)</button>
@@ -1108,16 +1111,15 @@
             resetInputAuth(); 
         }
 
-        // PHÂN CHIA THÀNH VIÊN THEO 4 TỔ VỚI 4 KHỐI MÀU (Bàn 1-3 và Bàn 4-6)
         function getTargetSeats(g) {
             let seats = [];
-            if (g == 1) { // Tổ 1: Khối Vàng (Bàn 1-3, cột trái)
+            if (g == 1) { 
                 [0, 1, 2].forEach(r => { let s = r*4 + 1; seats.push(s, s+1, s+2, s+3); });
-            } else if (g == 2) { // Tổ 2: Khối Kem (Bàn 1-3, cột phải)
+            } else if (g == 2) { 
                 [0, 1, 2].forEach(r => { let banNum = 12 - r; let s = (banNum - 1)*4 + 1; seats.push(s, s+1, s+2, s+3); });
-            } else if (g == 3) { // Tổ 3: Khối Xám (Bàn 4-6, cột trái)
+            } else if (g == 3) { 
                 [3, 4, 5].forEach(r => { let s = r*4 + 1; seats.push(s, s+1, s+2, s+3); });
-            } else if (g == 4) { // Tổ 4: Khối Xanh (Bàn 4-6, cột phải)
+            } else if (g == 4) { 
                 [3, 4, 5].forEach(r => { let banNum = 12 - r; let s = (banNum - 1)*4 + 1; seats.push(s, s+1, s+2, s+3); });
             }
             return seats;
@@ -1257,6 +1259,32 @@
                 saveData('map', STATE.map);
                 renderSeatingMap(); renderAdminSeatingMap();
             }
+        }
+
+        // HÀM HOÁN ĐỔI NGUYÊN CẢ HAI TỔ VỚI NHAU
+        window.swapEntireGroups = function() {
+            let g1 = document.getElementById("swap-group-1").value;
+            let g2 = document.getElementById("swap-group-2").value;
+            if (g1 === g2) {
+                alert("Vui lòng chọn 2 tổ khác nhau để hoán đổi!");
+                return;
+            }
+            if (!confirm(`Xác nhận hoán đổi vị trí toàn bộ học sinh giữa Tổ ${g1} và Tổ ${g2}?`)) return;
+
+            let seats1 = getTargetSeats(g1);
+            let seats2 = getTargetSeats(g2);
+
+            let mapCopy = { ...STATE.map };
+            let group1Data = seats1.map(s => mapCopy['pos_' + s]);
+            let group2Data = seats2.map(s => mapCopy['pos_' + s]);
+
+            seats1.forEach((s, idx) => { STATE.map['pos_' + s] = group2Data[idx]; });
+            seats2.forEach((s, idx) => { STATE.map['pos_' + s] = group1Data[idx]; });
+
+            saveData('map', STATE.map);
+            renderSeatingMap();
+            renderAdminSeatingMap();
+            alert(`Đã hoán đổi thành công vị trí giữa Tổ ${g1} và Tổ ${g2}!`);
         }
 
         function getSeatLayout() {
@@ -1422,18 +1450,13 @@
             }
         }
 
-        // TỰ ĐỘNG GỢI Ý XẾP CHỖ (CHIA ĐỀU HỌC SINH VÀO 4 TỔ)
         window.autoSuggestSeating = function() {
             if(!confirm("Hệ thống sẽ chia đều học sinh vào 4 tổ và xếp các bàn trống xuống dưới cùng. Tiếp tục?")) return;
-            
             let allStts = [];
             for(let i=1; i<=STATE.students.length; i++) allStts.push(i);
             allStts.sort(() => Math.random() - 0.5); 
-
             for(let i=1; i<=48; i++) STATE.map['pos_'+i] = null;
-
             let groupSeats = { 1: getTargetSeats(1), 2: getTargetSeats(2), 3: getTargetSeats(3), 4: getTargetSeats(4) };
-            
             let g = 1;
             while(allStts.length > 0) {
                 let stt = allStts.pop();
@@ -1450,14 +1473,12 @@
             alert("Đã phân bổ chỗ ngồi thành công!");
         }
 
-        // ĐẢO NGẪU NHIÊN TRONG TỔ (HOẠT ĐỘNG HOÀN HẢO VỚI MỌI SỐ LƯỢNG HỌC SINH)
         window.autoShuffleWithinGroups = function() {
             if(!confirm("Đảo ngẫu nhiên TRONG TỔ (giữ nguyên vị trí bàn trống)?")) return;
             [1, 2, 3, 4].forEach(g => {
                 let targetSeats = getTargetSeats(g);
                 let currentStudents = [];
                 let occupiedSeats = [];
-                
                 targetSeats.forEach(seatNum => {
                     let stt = STATE.map['pos_' + seatNum];
                     if (stt && stt <= STATE.students.length) {
@@ -1465,9 +1486,7 @@
                         occupiedSeats.push(seatNum);
                     }
                 });
-
                 currentStudents.sort(() => Math.random() - 0.5);
-
                 occupiedSeats.forEach((seatNum, idx) => {
                     STATE.map['pos_' + seatNum] = currentStudents[idx];
                 });
@@ -1476,12 +1495,10 @@
             alert("Đã đảo vị trí trong từng tổ thành công!");
         }
 
-        // ĐẢO NGẪU NHIÊN TOÀN LỚP (HOẠT ĐỘNG HOÀN HẢO VỚI MỌI SỐ LƯỢNG HỌC SINH)
         window.autoShuffleAll = function() {
             if(!confirm("Đảo ngẫu nhiên TOÀN LỚP (giữ nguyên vị trí bàn trống)?")) return;
             let currentStudents = [];
             let occupiedSeats = [];
-            
             for(let i=1; i<=48; i++) {
                 let stt = STATE.map['pos_' + i];
                 if (stt && stt <= STATE.students.length) {
@@ -1489,13 +1506,10 @@
                     occupiedSeats.push(i);
                 }
             }
-
             currentStudents.sort(() => Math.random() - 0.5);
-
             occupiedSeats.forEach((seatNum, idx) => {
                 STATE.map['pos_' + seatNum] = currentStudents[idx];
             });
-
             saveData('map', STATE.map); renderSeatingMap(); renderAdminSeatingMap();
             alert("Đã đảo toàn bộ vị trí lớp thành công!");
         }
@@ -1516,7 +1530,6 @@
                     badStudents.push(`- ${name} (STT ${stt}): ${errDetails.join(', ')}`);
                 }
             });
-            
             let report = badStudents.length > 0 ? badStudents.join('\n') : `Lớp thực hiện tốt nội quy`;
             document.getElementById("admin-notice-title").value = `Tổng kết thi đua ${week}`;
             document.getElementById("admin-notice-content").value = report;
