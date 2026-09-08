@@ -1,11 +1,9 @@
-
-
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sổ Chủ Nhiệm Điện Tử Thầy Nguyện</title>
+    <title>Sổ Chủ Nhiệm Điện Tử</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -210,7 +208,7 @@
                 <!-- SƠ ĐỒ LỚP -->
                 <div style="background:#fff; border:1.5px solid #3b82f6; padding:12px; border-radius:10px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 6px;">
-                        <h4 style="color:#1e3a8a; font-size:0.95rem; margin:0;"><i class="fa-solid fa-map-location-dot"></i> SƠ ĐỒ VỊ TRÍ NGỒI (4 DÃY - BÀN ĐÔI)</h4>
+                       <h4 style="color:#1e3a8a; font-size:0.95rem; margin:0;"><i class="fa-solid fa-map-location-dot"></i> SƠ ĐỒ VỊ TRÍ NGỒI (2 DÃY LỚN - 12 BÀN/DÃY)</h4>
                         <div style="display:flex; gap:6px;">
                             <span id="seating-week-label" style="background:#eff6ff; color:#1e40af; padding:4px 8px; border-radius:6px; font-weight:700; font-size:0.75rem; border:1px solid #bfdbfe;">Đang xem: Tuần 1</span>
                             <select id="seating-month-select" onchange="window.updateSeatingWeekOptions()" style="padding: 4px; border-radius: 6px; font-weight: 700; border: 1px solid #3b82f6; width:auto;"></select>
@@ -1376,34 +1374,71 @@
             window.resetInputAuth();
         }
 
-        window.resetInputAuth = function() {
-            document.getElementById("group-pass-input").value = "";
-            document.getElementById("group-member-entry-container").style.display = "none";
-            document.getElementById("lock-status-alert").style.display = "none";
-            let s = document.getElementById("input-week-select");
-            if(s) {
-                let wNum = parseInt(s.value.replace("Tuần ", "")) || 1;
-                let {submitDeadline, lockDeadline} = getWeekDeadlines(wNum);
-                document.getElementById("deadline-info-display").innerHTML = `
-    <div style="display: flex; align-items: center; gap: 8px;">
-        <i class="fa-solid fa-circle-info" style="font-size: 1.1rem; color: #2563eb;"></i>
-        <div>
-            <span>Thời gian nộp báo cáo thi đua tuần:</span><br>
-            <strong>• Hạn chót nộp đúng hạn:</strong> Trước ${submitDeadline.getDate()}/${submitDeadline.getMonth()+1}<br>
-            <strong>• Thời gian khóa hệ thống:</strong> ${lockDeadline.getDate()}/${lockDeadline.getMonth()+1}
-        </div>
-    </div>`;
-            }
+window.getWeekDeadlines = function(wNum) {
+    let baseDate = new Date(2026, 8, 7); // Ngày 7/9/2026 (Thứ Hai đầu tuần 1)
+    let weekStart = new Date(baseDate);
+    weekStart.setDate(baseDate.getDate() + (wNum - 1) * 7);
+    
+    // Tính ngày Chủ Nhật của tuần đó (thứ Hai + 6 ngày = Chủ Nhật)
+    let submitDeadline = new Date(weekStart);
+    submitDeadline.setDate(weekStart.getDate() + 6); // Chủ Nhật của tuần
+    submitDeadline.setHours(20, 0, 0, 0); // Cố định 20h
+    
+    // Khóa hệ thống sau hạn chót 3 ngày
+    let lockDeadline = new Date(submitDeadline);
+    lockDeadline.setDate(submitDeadline.getDate() + 3);
+    
+    return { submitDeadline, lockDeadline };
+};
+
+window.resetInputAuth = function() {
+    let passInput = document.getElementById("group-pass-input");
+    if (passInput) passInput.value = "";
+    let memberContainer = document.getElementById("group-member-entry-container");
+    if (memberContainer) memberContainer.style.display = "none";
+    let lockAlert = document.getElementById("lock-status-alert");
+    if (lockAlert) lockAlert.style.display = "none";
+    
+    let s = document.getElementById("input-week-select");
+    if(s) {
+        let val = s.value || "1";
+        let wNum = parseInt(val.replace(/\D/g, '')) || 1;
+        
+        let { submitDeadline, lockDeadline } = window.getWeekDeadlines(wNum);
+        
+        let subDay = submitDeadline.getDate();
+        let subMonth = submitDeadline.getMonth() + 1;
+        let subYear = submitDeadline.getFullYear();
+
+        let lockDay = lockDeadline.getDate();
+        let lockMonth = lockDeadline.getMonth() + 1;
+        let lockYear = lockDeadline.getFullYear();
+        
+        let deadlineBox = document.getElementById("deadline-info-display");
+        if (deadlineBox) {
+            deadlineBox.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-circle-info" style="font-size: 1.1rem; color: #2563eb;"></i>
+                <div>
+                    <span>Thời gian nộp báo cáo thi đua tuần:</span><br>
+                    <strong>• Hạn chót nộp đúng hạn:</strong> ${subDay}/${subMonth}/${subYear}<br>
+                    <strong>• Thời gian khóa hệ thống:</strong> ${lockDay}/${lockMonth}/${lockYear}
+                </div>
+            </div>`;
         }
+    }
+};
 
-      function getWeekDeadlines(weekNum) {
-    let start = STATE.config.startDate ? new Date(STATE.config.startDate) : new Date();
-
-    let sub = new Date(start.getTime() + (weekNum - 1) * 7 * 86400000 + 4 * 86400000);
-    let lock = new Date(sub.getTime() + 5 * 86400000);
-    return { submitDeadline: sub, lockDeadline: lock };
-}
-
+document.addEventListener("DOMContentLoaded", function() {
+    setTimeout(window.resetInputAuth, 200);
+    
+    let weekSelect = document.getElementById("input-week-select");
+    if (weekSelect) {
+        weekSelect.addEventListener("change", function() {
+            setTimeout(window.resetInputAuth, 50);
+        });
+    }
+});
         window.verifyAuthAndRender = function() {
             let role = document.getElementById("select-role-type").value;
             let pass = document.getElementById("group-pass-input").value.trim();
@@ -1414,7 +1449,7 @@
             else if (role === 'totruong' && pass === "to" + groupId) isAuthOk = true;
 
             if (!isAuthOk) {
-                alert("Mật khẩu không đúng! (Mặc định lớp trưởng: loptruong | Tổ trưởng: to1, to2...)");
+                alert("Mật khẩu không đúng! Vui lòng thử lại");
                 return;
             }
 
@@ -1711,62 +1746,81 @@ window.addNewStudent = function() {
         window.renderAnnouncements = function() {}
         window.renderAdminAnnouncementsManager = function() {}
         window.renderSeatingMap = function() {}
-function createSeatingGridHTML(isAdmin) {
-    let html = "";
-    const daysConfig = [
-        { id: 1, title: "DÃY 1 (Bàn 1 - 6)", startPos: 1 },
-        { id: 2, title: "DÃY 2 (Bàn 12 - 7)", startPos: 25 }
-    ];
 
-    // Bảng màu đậm và sắc nét hơn cho từng khối tổ (3 hàng bàn một màu)
-    const blockStyles = {
-        1: { bg: "#fef08a", border: "#eab308" }, // Vàng đậm sắc nét (3 bàn đầu Dãy 1)
-        2: { bg: "#cbd5e1", border: "#64748b" }, // Xám đậm rõ nét (3 bàn sau Dãy 1)
-        3: { bg: "#ffedd5", border: "#f97316" }, // Cam đậm sắc nét (3 bàn đầu Dãy 2)
-        4: { bg: "#bbf7d0", border: "#22c55e" }  // Xanh lá đậm sắc nét (3 bàn sau Dãy 2)
+        function createSeatingGridHTML(isAdmin) {
+    let html = '';
+    
+    // Hàm phụ trợ vẽ từng vị trí ngồi
+    const renderSeat = (p) => {
+        let stt = STATE.map['pos_' + p];
+        let name = stt ? STATE.students[stt - 1] : "";
+        let role = stt ? (STATE.positions[stt] || "") : "";
+        
+        let roleBadge = role ? `<div style="font-size:0.5rem; color:#fff; background:#ef4444; border-radius:4px; padding:2px 4px; display:inline-block; margin-bottom:2px; font-weight:bold;">${role}</div>` : '';
+        let extraClass = !stt ? 'empty-seat' : '';
+        let onclick = isAdmin ? `onclick="window.selectSeatForSwap(${p})"` : '';
+        
+        return `
+        <div class="seat-box ${extraClass}" id="seat-${isAdmin?'admin':'public'}-${p}" ${onclick} style="border:2px solid #94a3b8; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+            ${roleBadge}
+            <div class="seat-name" style="text-align:center;">${name || "Trống"}</div>
+        </div>`;
     };
 
-    daysConfig.forEach((day, dayIdx) => {
-        html += `<div style="flex: 1; min-width: 380px; background: #ffffff; border: 2.5px solid #94a3b8; border-radius: 14px; padding: 12px; margin: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.06);">`;
-        html += `<div style="text-align:center; font-weight:900; color:#1e3a8a; margin-bottom:12px; font-size:0.95rem; background:#dbeafe; padding:8px; border-radius:8px; border:1.5px solid #93c5fd; text-transform:uppercase;">${day.title}</div>`;
+    // Hàm render 4 bàn trên cùng 1 hàng ngang
+    const renderRow = (p1, p2, p3, p4) => {
+        return `<div style="display:flex; gap:6px; justify-content:center; width:100%;">${renderSeat(p1)}${renderSeat(p2)}${renderSeat(p3)}${renderSeat(p4)}</div>`;
+    };
+
+    // Vỏ bọc linh hoạt
+    html += `<div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; width: 100%;">`;
+
+    // ================= DÃY 1 (TRÁI) =================
+    html += `
+    <div style="flex: 1; min-width: 290px; max-width: 100%; border: 2px solid #bfdbfe; border-radius: 12px; padding: 8px; background: #ffffff;">
+        <div style="background: #dbeafe; color: #1e3a8a; text-align: center; padding: 6px; font-size: 0.9rem; font-weight: 800; border-radius: 6px; margin-bottom: 8px;">DÃY 1 (BÀN 1 - 6)</div>
         
-        for (let tableIdx = 0; tableIdx < 6; tableIdx++) {
-            let blockId;
-            if (dayIdx === 0) {
-                blockId = tableIdx < 3 ? 1 : 2;
-            } else {
-                blockId = tableIdx < 3 ? 3 : 4;
-            }
-            let tStyle = blockStyles[blockId];
+        <!-- Tổ 1 (Vàng) -->
+        <div class="group-tto-1" style="padding: 8px; border-radius: 8px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 6px;">
+            <div style="text-align:center; font-weight:900; color:#a16207; font-size:0.85rem; text-transform:uppercase;">Tổ 1</div>
+            ${renderRow(1, 5, 9, 13)}
+            ${renderRow(17, 21, 25, 29)}
+            ${renderRow(33, 37, 41, 45)}
+        </div>
 
-            // Khung bàn ngang với màu nền và viền đậm rõ nét
-            html += `<div class="seat-row" style="display: flex; gap: 8px; padding: 8px; border-radius: 12px; border: 2.5px solid ${tStyle.border}; justify-content: center; margin-bottom: 8px; background: ${tStyle.bg}; box-shadow: 0 2px 4px rgba(0,0,0,0.04);">`;
-            
-            for (let seatIdx = 0; seatIdx < 4; seatIdx++) {
-                let p = day.startPos + (tableIdx * 4) + seatIdx;
-                let stt = STATE.map['pos_' + p];
-                let name = stt ? STATE.students[stt - 1] : "";
-                let role = stt ? (STATE.positions[stt] || "") : "";
-                let roleBadge = role ? `<div style="font-size:0.5rem; color:#fff; background:#ef4444; border-radius:4px; padding:1px 4px; display:inline-block; margin-bottom:2px; font-weight:bold;">${role}</div>` : '';
-                
-                let extraClass = !stt ? 'empty-seat' : '';
-                let onclick = isAdmin ? `onclick="window.selectSeatForSwap(${p})"` : '';
-                
-                let boxBg = "#ffffff";
-                let boxBorder = stt ? "#475569" : "#cbd5e1"; // Viền ô tên học sinh đậm hơn để dễ đọc
+        <!-- Tổ 3 (Xám) -->
+        <div class="group-tto-3" style="padding: 8px; border-radius: 8px; display: flex; flex-direction: column; gap: 6px;">
+            <div style="text-align:center; font-weight:900; color:#334155; font-size:0.85rem; text-transform:uppercase;">Tổ 3</div>
+            ${renderRow(3, 7, 11, 15)}
+            ${renderRow(19, 23, 27, 31)}
+            ${renderRow(35, 39, 43, 47)}
+        </div>
+    </div>`;
 
-                html += `
-                <div class="seat-box ${extraClass}" id="seat-${isAdmin?'admin':'public'}-${p}" ${onclick} style="width: 82px; height: 50px; border: 2px solid ${boxBorder}; background: ${boxBg}; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 2px; cursor: pointer; transition: 0.2s;">
-                    ${roleBadge}
-                    <div class="seat-name" style="font-size: 0.58rem; font-weight: 800; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; line-height: 1.1; color: #0f172a;">${name || "Trống"}</div>
-                </div>`;
-            }
-            html += `</div>`;
-        }
-        html += `</div>`;
-    });
+    // ================= DÃY 2 (PHẢI) =================
+    html += `
+    <div style="flex: 1; min-width: 290px; max-width: 100%; border: 2px solid #bfdbfe; border-radius: 12px; padding: 8px; background: #ffffff;">
+        <div style="background: #dbeafe; color: #1e3a8a; text-align: center; padding: 6px; font-size: 0.9rem; font-weight: 800; border-radius: 6px; margin-bottom: 8px;">DÃY 2 (BÀN 12 - 7)</div>
+        
+        <!-- Tổ 2 (Cam) -->
+        <div class="group-tto-2" style="padding: 8px; border-radius: 8px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 6px;">
+            <div style="text-align:center; font-weight:900; color:#b45309; font-size:0.85rem; text-transform:uppercase;">Tổ 2</div>
+            ${renderRow(2, 6, 10, 14)}
+            ${renderRow(18, 22, 26, 30)}
+            ${renderRow(34, 38, 42, 46)}
+        </div>
 
-    return `<div style="display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; width: 100%;">${html}</div>`;
+        <!-- Tổ 4 (Xanh) -->
+        <div class="group-tto-4" style="padding: 8px; border-radius: 8px; display: flex; flex-direction: column; gap: 6px;">
+            <div style="text-align:center; font-weight:900; color:#15803d; font-size:0.85rem; text-transform:uppercase;">Tổ 4</div>
+            ${renderRow(4, 8, 12, 16)}
+            ${renderRow(20, 24, 28, 32)}
+            ${renderRow(36, 40, 44, 48)}
+        </div>
+    </div>`;
+
+    html += `</div>`;
+    return html;
 }
         window.renderSeatingMap = function() {
             let container = document.getElementById("seating-map-grid-container");
@@ -2766,6 +2820,63 @@ window.resetAllErrors = function() {
         alert("Đã reset sạch toàn bộ lỗi của tất cả các tuần!");
     }
 };
+// 1. Hàm tính ngày hạn nộp theo số tuần
+window.getWeekDeadlines = function(wNum) {
+    let baseDate = new Date("2026-09-07"); // Ngày bắt đầu Tuần 1 (Thứ Hai)
+    let weekStart = new Date(baseDate);
+    weekStart.setDate(baseDate.getDate() + (wNum - 1) * 7);
+    
+    // Xác định ngày Chủ Nhật cuối tuần của tuần đó
+    let weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    
+    let deadlineDayConfig = STATE.config.deadlineDay !== undefined ? STATE.config.deadlineDay : 1; 
+    
+    // Tính khoảng cách ngày tính tiếp từ Chủ Nhật (Chủ Nhật = 0, Thứ 2 = 1, Thứ 3 = 2,...)
+    let dayOffset = deadlineDayConfig === 7 ? 0 : deadlineDayConfig;
+    
+    let submitDeadline = new Date(weekEnd);
+    submitDeadline.setDate(weekEnd.getDate() + dayOffset);
+    submitDeadline.setHours(20, 0, 0, 0); // Cố định 20h
+    
+    // Khóa hệ thống sau hạn chót đúng 3 ngày
+    let lockDeadline = new Date(submitDeadline);
+    lockDeadline.setDate(submitDeadline.getDate() + 3);
+    
+    return { submitDeadline, lockDeadline };
+};
+// Hàm cập nhật hiển thị giao diện
+function updateDeadlineUI() {
+    let selectElem = document.getElementById("input-week-select");
+    if (!selectElem) return;
+    
+    let val = selectElem.value || "1";
+    let wNum = parseInt(val.replace(/\D/g, '')) || 1;
+    
+    let { submitDeadline, lockDeadline } = window.getWeekDeadlines(wNum);
+    let deadlineBox = document.getElementById("deadline-info-display");
+    
+    if (deadlineBox) {
+        deadlineBox.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-circle-info" style="font-size: 1.1rem; color: #2563eb;"></i>
+            <div>
+                <span>Thời gian nộp báo cáo thi đua tuần:</span><br>
+                <strong>• Hạn chót nộp đúng hạn:</strong> Trước ${submitDeadline.getDate()}/${submitDeadline.getMonth()+1}<br>
+                <strong>• Thời gian khóa hệ thống:</strong> ${lockDeadline.getDate()}/${lockDeadline.getMonth()+1}
+            </div>
+        </div>`;
+    }
+}
+
+// Tự động gán thẳng hàm cập nhật vào ô chọn tuần khi trang vừa tải xong
+window.addEventListener("DOMContentLoaded", function() {
+    let selectElem = document.getElementById("input-week-select");
+    if (selectElem) {
+        selectElem.onchange = updateDeadlineUI;
+        updateDeadlineUI(); // Chạy luôn lần đầu khi load trang
+    }
+});
 </script>
 </body>
 </html>
