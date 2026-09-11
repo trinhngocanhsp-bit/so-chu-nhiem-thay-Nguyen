@@ -610,10 +610,12 @@
         window.tempDutyObj = {};
         window.selectedPosForSwap = null;
 
-        function sanitizeState() {
+      function sanitizeState() {
             if (!STATE.students || !Array.isArray(STATE.students) || STATE.students.length === 0) STATE.students = [...DEFAULT_STUDENTS_10A4];
             if (!STATE.phones || typeof STATE.phones !== 'object') STATE.phones = {};
             if (!STATE.positions || typeof STATE.positions !== 'object') STATE.positions = {};
+            if (!STATE.studentGroups || typeof STATE.studentGroups !== 'object') STATE.studentGroups = {}; 
+            if (!STATE.groupLabelSwap || typeof STATE.groupLabelSwap !== 'object') STATE.groupLabelSwap = { 1: 1, 2: 2, 3: 3, 4: 4 }; // <-- Nhớ nhãn dán
             if (!STATE.emulation || typeof STATE.emulation !== 'object') STATE.emulation = {};
             if (!STATE.map || typeof STATE.map !== 'object' || Object.keys(STATE.map).length === 0) {
                 let m = {};
@@ -642,6 +644,8 @@
                 let s = localStorage.getItem('students'); if(s && s !== "null") STATE.students = JSON.parse(s);
                 let p = localStorage.getItem('phones'); if(p && p !== "null") STATE.phones = JSON.parse(p);
                 let pos = localStorage.getItem('positions'); if(pos && pos !== "null") STATE.positions = JSON.parse(pos);
+                let sg = localStorage.getItem('studentGroups'); if(sg && sg !== "null") STATE.studentGroups = JSON.parse(sg);
+                let gls = localStorage.getItem('groupLabelSwap'); if(gls && gls !== "null") STATE.groupLabelSwap = JSON.parse(gls); // <-- Gọi nhãn dán
                 let em = localStorage.getItem('emulation'); if(em && em !== "null") STATE.emulation = JSON.parse(em);
                 let m = localStorage.getItem('map'); if(m && m !== "null") STATE.map = JSON.parse(m);
                 let n = localStorage.getItem('notices'); if(n && n !== "null") STATE.notices = JSON.parse(n);
@@ -666,6 +670,8 @@
                             if(data.students && data.students !== "null") STATE.students = JSON.parse(data.students);
                             if(data.phones && data.phones !== "null") STATE.phones = JSON.parse(data.phones);
                             if(data.positions && data.positions !== "null") STATE.positions = JSON.parse(data.positions);
+                            if(data.studentGroups && data.studentGroups !== "null") STATE.studentGroups = JSON.parse(data.studentGroups);
+                            if(data.groupLabelSwap && data.groupLabelSwap !== "null") STATE.groupLabelSwap = JSON.parse(data.groupLabelSwap); // <-- Gọi nhãn dán Firebase
                             if(data.emulation && data.emulation !== "null") STATE.emulation = JSON.parse(data.emulation);
                             if(data.map && data.map !== "null") STATE.map = JSON.parse(data.map);
                             if(data.notices && data.notices !== "null") STATE.notices = JSON.parse(data.notices);
@@ -680,7 +686,6 @@
                 } catch(e) { console.warn("Firebase block error:", e); }
             }
         };
-
         window.saveData = function(key, valueObj) {
             if(STATE[key] !== undefined) STATE[key] = valueObj;
             if(STATE.dbRef) {
@@ -2595,7 +2600,7 @@ window.autoSelectCurrentWeek = function() {
     let currentWeekNum = Math.max(1, Math.floor(diffDays / 7) + 1);
     
     // Tự động gán giá trị vào các dropdown chọn tuần trên giao diện
-    let weekSelects = document.querySelectorAll("#input-week-select, #public-week-select, #duty-week-select");
+   let weekSelects = document.querySelectorAll("#input-week-select, #public-week-select, #duty-week-select, #seating-week-select");
     weekSelects.forEach(select => {
         if (select) {
             let optionVal = "Tuần " + currentWeekNum;
@@ -3026,49 +3031,117 @@ window.autoMapStudentsByGroup = function() {
 // Hàm cập nhật và phân bổ học sinh vào Tổ đồng thời cập nhật sơ đồ
 window.updateStudentGroup = function(stt, groupVal) {
     if(!STATE.studentGroups) STATE.studentGroups = {};
-    if(groupVal === "") {
-        delete STATE.studentGroups[stt];
-    } else {
-        STATE.studentGroups[stt] = groupVal;
-    }
+    if(groupVal === "") delete STATE.studentGroups[stt];
+    else STATE.studentGroups[stt] = groupVal;
     window.saveData('studentGroups', STATE.studentGroups);
-
-    // Tự động phân bổ lại vị trí trên sơ đồ lớp
     window.autoMapStudentsByGroup();
 };
+
+function createSeatingGridHTML(isAdmin) {
+    let html = '';
+    let labelSwap = STATE.groupLabelSwap || { 1: 1, 2: 2, 3: 3, 4: 4 };
+
+    const renderSeat = (p) => {
+        let stt = STATE.map['pos_' + p];
+        let name = stt ? STATE.students[stt - 1] : "";
+        let role = stt ? (STATE.positions[stt] || "") : "";
+        let roleBadge = role ? `<div style="font-size:0.5rem; color:#fff; background:#ef4444; border-radius:4px; padding:2px 4px; display:inline-block; margin-bottom:2px; font-weight:bold;">${role}</div>` : '';
+        let extraClass = !stt ? 'empty-seat' : '';
+        let onclick = isAdmin ? `onclick="window.selectSeatForSwap(${p})"` : '';
+        return `
+        <div class="seat-box ${extraClass}" id="seat-${isAdmin?'admin':'public'}-${p}" ${onclick} style="border:2px solid #94a3b8; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+            ${roleBadge}
+            <div class="seat-name" style="text-align:center;">${name || "Trống"}</div>
+        </div>`;
+    };
+
+    const renderRow = (p1, p2, p3, p4) => {
+        return `<div style="display:flex; gap:6px; justify-content:center; width:100%;">${renderSeat(p1)}${renderSeat(p2)}${renderSeat(p3)}${renderSeat(p4)}</div>`;
+    };
+
+    // Ánh xạ tên tổ cho Dãy 1 và Dãy 2
+    let g1 = labelSwap[1] || 1;
+    let g2 = labelSwap[2] || 2;
+    let g3 = labelSwap[3] || 3;
+    let g4 = labelSwap[4] || 4;
+
+    html += `<div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; width: 100%;">`;
+
+    // ================= DÃY 1 (Gồm Cột 1 và Cột 3) =================
+    html += `
+    <div style="flex: 1; min-width: 290px; max-width: 100%; border: 2px solid #bfdbfe; border-radius: 12px; padding: 8px; background: #ffffff;">
+        <div style="background: #dbeafe; color: #1e3a8a; text-align: center; padding: 6px; font-size: 0.9rem; font-weight: 800; border-radius: 6px; margin-bottom: 8px;">DÃY 1 </div>
+        
+        <div class="group-tto-${g1}" style="padding: 8px; border-radius: 8px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 6px;">
+            <div style="text-align:center; font-weight:900; font-size:0.85rem; text-transform:uppercase;">Tổ ${g1}</div>
+            ${renderRow(1, 5, 9, 13)}
+            ${renderRow(17, 21, 25, 29)}
+            ${renderRow(33, 37, 41, 45)}
+        </div>
+
+        <div class="group-tto-${g3}" style="padding: 8px; border-radius: 8px; display: flex; flex-direction: column; gap: 6px;">
+            <div style="text-align:center; font-weight:900; font-size:0.85rem; text-transform:uppercase;">Tổ ${g3}</div>
+            ${renderRow(3, 7, 11, 15)}
+            ${renderRow(19, 23, 27, 31)}
+            ${renderRow(35, 39, 43, 47)}
+        </div>
+    </div>`;
+
+    // ================= DÃY 2 (Gồm Cột 2 và Cột 4) =================
+    html += `
+    <div style="flex: 1; min-width: 290px; max-width: 100%; border: 2px solid #bfdbfe; border-radius: 12px; padding: 8px; background: #ffffff;">
+        <div style="background: #dbeafe; color: #1e3a8a; text-align: center; padding: 6px; font-size: 0.9rem; font-weight: 800; border-radius: 6px; margin-bottom: 8px;">DÃY 2</div>
+        
+        <div class="group-tto-${g2}" style="padding: 8px; border-radius: 8px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 6px;">
+            <div style="text-align:center; font-weight:900; font-size:0.85rem; text-transform:uppercase;">Tổ ${g2}</div>
+            ${renderRow(2, 6, 10, 14)}
+            ${renderRow(18, 22, 26, 30)}
+            ${renderRow(34, 38, 42, 46)}
+        </div>
+
+        <div class="group-tto-${g4}" style="padding: 8px; border-radius: 8px; display: flex; flex-direction: column; gap: 6px;">
+            <div style="text-align:center; font-weight:900; font-size:0.85rem; text-transform:uppercase;">Tổ ${g4}</div>
+            ${renderRow(4, 8, 12, 16)}
+            ${renderRow(20, 24, 28, 32)}
+            ${renderRow(36, 40, 44, 48)}
+        </div>
+    </div>`;
+
+    html += `</div>`;
+    return html;
+}
 
 window.autoMapStudentsByGroup = function() {
     let newMap = {};
     for (let i = 1; i <= 48; i++) newMap['pos_' + i] = null;
 
-    let groups = { "Tổ 1": [], "Tổ 2": [], "Tổ 3": [], "Tổ 4": [], "Chưa chọn": [] };
-
+    let groups = { 1: [], 2: [], 3: [], 4: [], "Chưa chọn": [] };
     STATE.students.forEach((_, idx) => {
         let stt = idx + 1;
-        let g = STATE.studentGroups && STATE.studentGroups[stt] ? STATE.studentGroups[stt] : "";
-        if (groups[g]) {
-            groups[g].push(stt);
-        } else {
-            groups["Chưa chọn"].push(stt);
-        }
+        let gStr = STATE.studentGroups && STATE.studentGroups[stt] ? STATE.studentGroups[stt] : "";
+        let gNum = parseInt(String(gStr).replace(/\D/g, ''));
+        if (gNum >= 1 && gNum <= 4) groups[gNum].push(stt);
+        else groups["Chưa chọn"].push(stt);
     });
 
-    let groupColMapping = { "Tổ 1": 1, "Tổ 2": 2, "Tổ 3": 3, "Tổ 4": 4 };
+    let labelSwap = STATE.groupLabelSwap || { 1: 1, 2: 2, 3: 3, 4: 4 };
+    let cols = {
+        1: [1, 5, 9, 13, 17, 21, 25, 29, 33, 37, 41, 45],
+        2: [2, 6, 10, 14, 18, 22, 26, 30, 34, 38, 42, 46],
+        3: [3, 7, 11, 15, 19, 23, 27, 31, 35, 39, 43, 47],
+        4: [4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48]
+    };
 
-    ["Tổ 1", "Tổ 2", "Tổ 3", "Tổ 4"].forEach(groupName => {
-        let col = groupColMapping[groupName];
-        let members = groups[groupName];
+    for (let c = 1; c <= 4; c++) {
+        let groupId = labelSwap[c] || c; 
+        let members = groups[groupId] || []; 
         
         members.forEach((stt, index) => {
-            let rowIndex = Math.floor(index / 2);
-            let seatInPair = index % 2;
-            let targetPos = (rowIndex * 8) + (seatInPair * 4) + col;
-            
-            if (targetPos <= 48) {
-                newMap['pos_' + targetPos] = stt;
+            if (index < cols[c].length) {
+                newMap['pos_' + cols[c][index]] = stt;
             }
         });
-    });
+    }
 
     let unassigned = [...groups["Chưa chọn"]];
     for (let i = 1; i <= 48; i++) {
@@ -3082,6 +3155,72 @@ window.autoMapStudentsByGroup = function() {
 
     if (typeof window.renderSeatingMap === 'function') window.renderSeatingMap();
     if (typeof window.renderAdminSeatingMap === 'function') window.renderAdminSeatingMap();
+};
+
+window.swapEntireGroups = function() {
+    const targetG1 = parseInt(document.getElementById("swap-group-1").value); 
+    const targetG2 = parseInt(document.getElementById("swap-group-2").value); 
+    if(targetG1 === targetG2) return alert("Vui lòng chọn 2 tổ khác nhau!");
+
+    let labelSwap = STATE.groupLabelSwap || { 1: 1, 2: 2, 3: 3, 4: 4 };
+
+    let col1 = Object.keys(labelSwap).find(k => labelSwap[k] == targetG1);
+    let col2 = Object.keys(labelSwap).find(k => labelSwap[k] == targetG2);
+
+    if (!col1 || !col2) {
+        STATE.groupLabelSwap = { 1: 1, 2: 2, 3: 3, 4: 4 };
+        window.saveData('groupLabelSwap', STATE.groupLabelSwap);
+        window.autoMapStudentsByGroup();
+        return alert("Dữ liệu hoán đổi bị kẹt. Hệ thống đã làm mới, cô vui lòng chọn đổi lại 1 lần nữa!");
+    }
+
+    col1 = parseInt(col1);
+    col2 = parseInt(col2);
+
+    let temp = labelSwap[col1];
+    labelSwap[col1] = labelSwap[col2];
+    labelSwap[col2] = temp;
+
+    STATE.groupLabelSwap = labelSwap;
+    window.saveData('groupLabelSwap', STATE.groupLabelSwap);
+
+    window.autoMapStudentsByGroup();
+    alert(`🎉 Đã đổi chỗ thành công Tổ ${targetG1} và Tổ ${targetG2}!`);
+};
+
+function getGroupMembers(groupId) {
+    let members = [];
+    if (typeof STATE !== 'undefined' && STATE.studentGroups) {
+        for (let stt = 1; stt <= STATE.students.length; stt++) {
+            let assignedGroupStr = STATE.studentGroups[stt];
+            if (assignedGroupStr) {
+                let gNum = parseInt(String(assignedGroupStr).replace(/\D/g, ''));
+                if (gNum == groupId) members.push(stt);
+            }
+        }
+    }
+    if (members.length === 0 && typeof STATE !== 'undefined' && STATE.map) {
+        for (let i = 1; i <= 48; i++) {
+            let stt = STATE.map['pos_' + i];
+            if (stt) {
+                let labelSwap = STATE.groupLabelSwap || { 1: 1, 2: 2, 3: 3, 4: 4 };
+                let colIndex = ((i - 1) % 4) + 1; 
+                let actualGroupNum = labelSwap[colIndex];
+                if (actualGroupNum == groupId) members.push(stt);
+            }
+        }
+    }
+    return members;
+}
+
+window.autoSuggestSeating = function() {
+    if(!confirm("Chức năng này không khả dụng khi đang khóa Tổ cứng. Vui lòng xếp thủ công.")) return;
+};
+window.autoShuffleWithinGroups = function() {
+    if(!confirm("Chức năng này không khả dụng khi đang khóa Tổ cứng. Vui lòng xếp thủ công.")) return;
+};
+window.autoShuffleAll = function() {
+    if(!confirm("Chức năng này không khả dụng khi đang khóa Tổ cứng. Vui lòng xếp thủ công.")) return;
 };
 </script>
 </body>
