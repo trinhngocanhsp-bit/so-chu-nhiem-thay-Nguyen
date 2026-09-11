@@ -2171,18 +2171,18 @@ window.addNewStudent = function() {
         }
 
         function getGroupMembers(groupId) {
-            let members = [];
-            for (let i = 1; i <= 48; i++) {
-                let stt = STATE.map['pos_' + i];
-                if (stt) {
-                    let colIndex = (i - 1) % 4; 
-                    let sttGroup = colIndex + 1;
-                    if (sttGroup == groupId) members.push(stt);
-                }
+    let members = [];
+    for (let i = 1; i <= 48; i++) {
+        let stt = STATE.map['pos_' + i];
+        if (stt) {
+            let sttGroup = ((i - 1) % 4) + 1;
+            if (sttGroup == groupId) {
+                members.push(stt);
             }
-            return members;
         }
-
+    }
+    return members;
+}
         window.finalizeReport = function(groupId) {
             const week = document.getElementById("input-week-select").value;
             if (!confirm(`Xác nhận nộp báo cáo ${week}? Điểm sẽ được cập nhật lên bảng tổng hợp.`)) return;
