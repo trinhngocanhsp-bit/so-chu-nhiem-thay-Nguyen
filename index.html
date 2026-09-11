@@ -417,12 +417,16 @@
                     <div class="table-responsive" style="max-height:350px;">
                         <table>
                             <thead>
-                                <tr style="background:#f8fafc; color:#1e3a8a;">
-                                    <th style="width:45px;">STT</th><th style="text-align:left;">Họ và Tên học sinh</th>
-                                    <th style="width:150px;">SĐT Zalo</th><th style="width:140px;">Chức vụ</th>
-                                    <th style="width:110px;">Thao tác Zalo</th><th style="width:55px;">Xóa</th>
-                                </tr>
-                            </thead>
+    <tr style="background:#f8fafc; color:#1e3a8a;">
+        <th style="width:45px;">STT</th>
+        <th style="text-align:left;">Họ và Tên học sinh</th>
+        <th style="width:150px;">SĐT Zalo</th>
+        <th style="width:140px;">Chức vụ</th>
+        <th style="width:110px;">Tổ</th>
+        <th style="width:110px;">Thao tác Zalo</th>
+        <th style="width:55px;">Xóa</th>
+    </tr>
+</thead>
                             <tbody id="admin-student-table-body"></tbody>
                         </table>
                     </div>
@@ -1499,31 +1503,42 @@ document.addEventListener("DOMContentLoaded", function() {
             window.renderInputPanel(role === 'loptruong' ? null : groupId, isLocked);
         }
 
-        window.renderAdminStudentManager = function() {
+       window.renderAdminStudentManager = function() {
     let tbody = document.getElementById("admin-student-table-body");
     if(!tbody) return;
     tbody.innerHTML = "";
 
     // Danh sách các chức vụ chuẩn để giáo viên dễ phân công
     const positionOptions = ["", "Lớp trưởng", "Bí thư", "Lớp phó", "Tổ trưởng", "Sao đỏ", "Giữ SĐB"];
+    const groupOptions = ["", "Tổ 1", "Tổ 2", "Tổ 3", "Tổ 4"];
 
     STATE.students.forEach((name, i) => {
         let stt = i + 1;
         let phone = STATE.phones[stt] || "";
         let currentPos = STATE.positions[stt] || "";
+        let currentGroup = STATE.studentGroups && STATE.studentGroups[stt] ? STATE.studentGroups[stt] : "";
         
         let zaloBtn = phone 
             ? `<a href="https://zalo.me/${phone}" target="_blank" style="background:#eff6ff; color:#0068ff; padding:5px 10px; border-radius:6px; font-weight:700; font-size:0.75rem; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:1px solid #bfdbfe;"><i class="fa-solid fa-comment-sms"></i> Nhắn Zalo</a>` 
             : `<span style="color:#94a3b8; font-size:0.75rem; font-style:italic;">Chưa có SĐT</span>`;
 
         // Tạo thẻ chọn chức vụ trực tiếp trong bảng
-        let posSelectHTML = `<select onchange="window.updateStudentPosition(${stt}, this.value)" style="padding:5px 8px; font-size:0.78rem; border:1px solid #cbd5e1; border-radius:6px; background:#fff; font-weight:600; color:#334155; outline:none; cursor:pointer;">`;
+        let posSelectHTML = `<select onchange="window.updateStudentPosition(${stt}, this.value)" style="padding:5px 8px; font-size:0.78rem; border:1px solid #cbd5e1; border-radius:6px; background:#fff; font-weight:600; color:#334155; outline:none; cursor:pointer; width:100%;">`;
         positionOptions.forEach(p => {
             let label = p === "" ? "-- Thành viên --" : p;
             let selected = currentPos === p ? "selected" : "";
             posSelectHTML += `<option value="${p}" ${selected}>${label}</option>`;
         });
         posSelectHTML += `</select>`;
+
+        // Tạo thẻ chọn Tổ trực tiếp ngay bên cạnh cột chức vụ
+        let groupSelectHTML = `<select onchange="window.updateStudentGroup(${stt}, this.value)" style="padding:5px 8px; font-size:0.78rem; border:1px solid #d97706; border-radius:6px; background:#fffbeb; font-weight:bold; color:#b45309; outline:none; cursor:pointer; width:100%;">`;
+        groupOptions.forEach(g => {
+            let label = g === "" ? "-- Chọn Tổ --" : g;
+            let selected = currentGroup === g ? "selected" : "";
+            groupSelectHTML += `<option value="${g}" ${selected}>${label}</option>`;
+        });
+        groupSelectHTML += `</select>`;
 
         tbody.innerHTML += `
             <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
@@ -1533,6 +1548,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     <input type="text" value="${phone}" onchange="window.updateStudentPhone(${stt}, this.value)" placeholder="Nhập SĐT..." style="padding:6px 10px; font-size:0.8rem; border:1px solid #cbd5e1; border-radius:6px; width:100%; outline:none; background:#fff;">
                 </td>
                 <td style="padding:10px 8px; text-align:center;">${posSelectHTML}</td>
+                <td style="padding:10px 8px; text-align:center;">${groupSelectHTML}</td>
                 <td style="padding:10px 8px; text-align:center;">${zaloBtn}</td>
                 <td style="padding:10px 8px; text-align:center;">
                     <button onclick="window.deleteStudent(${i})" style="background:#fee2e2; color:#dc2626; border:1px solid #fca5a5; padding:6px 12px; border-radius:6px; font-size:0.75rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-trash-can"></i> Xóa</button>
@@ -1750,7 +1766,35 @@ window.addNewStudent = function() {
         function createSeatingGridHTML(isAdmin) {
     let html = '';
     
-    // Hàm phụ trợ vẽ từng vị trí ngồi
+    // Tự động nhận diện xem cột hiện tại đang chứa phần lớn học sinh của tổ nào để in đúng tên Tổ đó
+    let getColGroupName = (colIndex) => {
+        let groupCounts = { "Tổ 1": 0, "Tổ 2": 0, "Tổ 3": 0, "Tổ 4": 0 };
+        for (let row = 1; row <= 12; row++) {
+            let p = (row - 1) * 4 + colIndex;
+            let stt = STATE.map['pos_' + p];
+            if (stt && STATE.studentGroups && STATE.studentGroups[stt]) {
+                let g = STATE.studentGroups[stt];
+                if (groupCounts[g] !== undefined) groupCounts[g]++;
+            }
+        }
+        // Tìm tổ chiếm đa số trong cột này để đặt tên nhãn
+        let maxGroup = `Tổ ${colIndex}`;
+        let maxCount = -1;
+        for (let g in groupCounts) {
+            if (groupCounts[g] > maxCount) {
+                maxCount = groupCounts[g];
+                maxGroup = g;
+            }
+        }
+        // Nếu chưa phân nhóm, lấy mặc định theo vị trí cột
+        return maxCount > 0 ? maxGroup : `Tổ ${colIndex}`;
+    };
+
+    let t1Name = getColGroupName(1);
+    let t2Name = getColGroupName(2);
+    let t3Name = getColGroupName(3);
+    let t4Name = getColGroupName(4);
+    
     const renderSeat = (p) => {
         let stt = STATE.map['pos_' + p];
         let name = stt ? STATE.students[stt - 1] : "";
@@ -1767,52 +1811,46 @@ window.addNewStudent = function() {
         </div>`;
     };
 
-    // Hàm render 4 bàn trên cùng 1 hàng ngang
     const renderRow = (p1, p2, p3, p4) => {
         return `<div style="display:flex; gap:6px; justify-content:center; width:100%;">${renderSeat(p1)}${renderSeat(p2)}${renderSeat(p3)}${renderSeat(p4)}</div>`;
     };
 
-    // Vỏ bọc linh hoạt
     html += `<div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; width: 100%;">`;
 
-    // ================= DÃY 1 (TRÁI) =================
+    // ================= DÃY 1 =================
     html += `
     <div style="flex: 1; min-width: 290px; max-width: 100%; border: 2px solid #bfdbfe; border-radius: 12px; padding: 8px; background: #ffffff;">
         <div style="background: #dbeafe; color: #1e3a8a; text-align: center; padding: 6px; font-size: 0.9rem; font-weight: 800; border-radius: 6px; margin-bottom: 8px;">DÃY 1 (BÀN 1 - 6)</div>
         
-        <!-- Tổ 1 (Vàng) -->
         <div class="group-tto-1" style="padding: 8px; border-radius: 8px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 6px;">
-            <div style="text-align:center; font-weight:900; color:#a16207; font-size:0.85rem; text-transform:uppercase;">Tổ 1</div>
+            <div style="text-align:center; font-weight:900; color:#a16207; font-size:0.85rem; text-transform:uppercase;">${t1Name}</div>
             ${renderRow(1, 5, 9, 13)}
             ${renderRow(17, 21, 25, 29)}
             ${renderRow(33, 37, 41, 45)}
         </div>
 
-        <!-- Tổ 3 (Xám) -->
         <div class="group-tto-3" style="padding: 8px; border-radius: 8px; display: flex; flex-direction: column; gap: 6px;">
-            <div style="text-align:center; font-weight:900; color:#334155; font-size:0.85rem; text-transform:uppercase;">Tổ 3</div>
+            <div style="text-align:center; font-weight:900; color:#334155; font-size:0.85rem; text-transform:uppercase;">${t3Name}</div>
             ${renderRow(3, 7, 11, 15)}
             ${renderRow(19, 23, 27, 31)}
             ${renderRow(35, 39, 43, 47)}
         </div>
     </div>`;
 
-    // ================= DÃY 2 (PHẢI) =================
+    // ================= DÃY 2 =================
     html += `
     <div style="flex: 1; min-width: 290px; max-width: 100%; border: 2px solid #bfdbfe; border-radius: 12px; padding: 8px; background: #ffffff;">
         <div style="background: #dbeafe; color: #1e3a8a; text-align: center; padding: 6px; font-size: 0.9rem; font-weight: 800; border-radius: 6px; margin-bottom: 8px;">DÃY 2 (BÀN 12 - 7)</div>
         
-        <!-- Tổ 2 (Cam) -->
         <div class="group-tto-2" style="padding: 8px; border-radius: 8px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 6px;">
-            <div style="text-align:center; font-weight:900; color:#b45309; font-size:0.85rem; text-transform:uppercase;">Tổ 2</div>
+            <div style="text-align:center; font-weight:900; color:#b45309; font-size:0.85rem; text-transform:uppercase;">${t2Name}</div>
             ${renderRow(2, 6, 10, 14)}
             ${renderRow(18, 22, 26, 30)}
             ${renderRow(34, 38, 42, 46)}
         </div>
 
-        <!-- Tổ 4 (Xanh) -->
         <div class="group-tto-4" style="padding: 8px; border-radius: 8px; display: flex; flex-direction: column; gap: 6px;">
-            <div style="text-align:center; font-weight:900; color:#15803d; font-size:0.85rem; text-transform:uppercase;">Tổ 4</div>
+            <div style="text-align:center; font-weight:900; color:#15803d; font-size:0.85rem; text-transform:uppercase;">${t4Name}</div>
             ${renderRow(4, 8, 12, 16)}
             ${renderRow(20, 24, 28, 32)}
             ${renderRow(36, 40, 44, 48)}
@@ -1857,25 +1895,37 @@ window.addNewStudent = function() {
             }
         }
 
-        window.swapEntireGroups = function() {
-            const g1 = parseInt(document.getElementById("swap-group-1").value);
-            const g2 = parseInt(document.getElementById("swap-group-2").value);
-            if(g1 === g2) return alert("Vui lòng chọn 2 tổ khác nhau!");
+      window.swapEntireGroups = function() {
+    const g1 = parseInt(document.getElementById("swap-group-1").value);
+    const g2 = parseInt(document.getElementById("swap-group-2").value);
+    if(g1 === g2) return alert("Vui lòng chọn 2 tổ khác nhau!");
 
-            let oldMap = {...STATE.map};
-            for (let row = 1; row <= 12; row++) {
-                let p1 = (row - 1) * 4 + g1;
-                let p2 = (row - 1) * 4 + g2;
-                
-                STATE.map['pos_' + p1] = oldMap['pos_' + p2];
-                STATE.map['pos_' + p2] = oldMap['pos_' + p1];
-            }
-            window.saveData('map', STATE.map);
-            window.renderSeatingMap(); window.renderAdminSeatingMap();
-            alert(`Đã đổi nguyên Tổ ${g1} và Tổ ${g2}!`);
-        }
+    let oldMap = { ...STATE.map };
+    for (let row = 1; row <= 12; row++) {
+        let p1 = (row - 1) * 4 + g1;
+        let p2 = (row - 1) * 4 + g2;
 
-        window.autoSuggestSeating = function() {
+        STATE.map['pos_' + p1] = oldMap['pos_' + p2];
+        STATE.map['pos_' + p2] = oldMap['pos_' + p1];
+    }
+    window.saveData('map', STATE.map);
+
+    // Hoán đổi nhãn hiển thị của 2 tổ trên giao diện sơ đồ
+    if (!STATE.groupLabelSwap) {
+        STATE.groupLabelSwap = { 1: 1, 2: 2, 3: 3, 4: 4 };
+    }
+    let tempLabel = STATE.groupLabelSwap[g1];
+    STATE.groupLabelSwap[g1] = STATE.groupLabelSwap[g2];
+    STATE.groupLabelSwap[g2] = tempLabel;
+    window.saveData('groupLabelSwap', STATE.groupLabelSwap);
+
+    // Vẽ lại sơ đồ ngay lập tức
+    if (typeof window.renderSeatingMap === 'function') window.renderSeatingMap();
+    if (typeof window.renderAdminSeatingMap === 'function') window.renderAdminSeatingMap();
+
+    alert(`🎉 Đã đổi chỗ thành công Tổ ${g1} và Tổ ${g2} (Cả thành viên và tên tổ đã đổi chỗ cho nhau)!`);
+};
+ window.autoSuggestSeating = function() {
             if(!confirm("Gợi ý xếp chỗ: Nam nữ ngồi xen kẽ, Ban cán sự rải đều. Sơ đồ hiện tại sẽ bị ghi đè. Bạn có chắc chắn?")) return;
             
             let allStts = Array.from({length: STATE.students.length}, (_, i) => i + 1);
@@ -2172,15 +2222,36 @@ window.addNewStudent = function() {
 
         function getGroupMembers(groupId) {
     let members = [];
-    for (let i = 1; i <= 48; i++) {
-        let stt = STATE.map['pos_' + i];
-        if (stt) {
-            let sttGroup = ((i - 1) % 4) + 1;
-            if (sttGroup == groupId) {
-                members.push(stt);
+    
+    // 1. Ưu tiên lấy từ danh sách Tổ đã gán thủ công trong bảng Quản trị (Tab 5)
+    if (typeof STATE !== 'undefined' && STATE.studentGroups) {
+        for (let stt = 1; stt <= STATE.students.length; stt++) {
+            let assignedGroupStr = STATE.studentGroups[stt];
+            if (assignedGroupStr) {
+                let gNum = parseInt(assignedGroupStr.replace(/\D/g, ''));
+                if (gNum == groupId) {
+                    members.push(stt);
+                }
             }
         }
     }
+    
+    // 2. Nếu chưa gán thủ công, quét theo sơ đồ và nhãn tổ đã hoán đổi
+    if (members.length === 0 && typeof STATE !== 'undefined' && STATE.map) {
+        for (let i = 1; i <= 48; i++) {
+            let stt = STATE.map['pos_' + i];
+            if (stt) {
+                let labelSwap = STATE.groupLabelSwap || { 1: 1, 2: 2, 3: 3, 4: 4 };
+                let colIndex = ((i - 1) % 4) + 1;
+                let actualGroupNum = labelSwap[colIndex];
+                
+                if (actualGroupNum == groupId) {
+                    members.push(stt);
+                }
+            }
+        }
+    }
+    
     return members;
 }
         window.finalizeReport = function(groupId) {
@@ -2877,6 +2948,141 @@ window.addEventListener("DOMContentLoaded", function() {
         updateDeadlineUI(); // Chạy luôn lần đầu khi load trang
     }
 });
+window.updateStudentGroup = function(stt, groupVal) {
+    if(!STATE.studentGroups) STATE.studentGroups = {};
+    if(groupVal === "") {
+        delete STATE.studentGroups[stt];
+    } else {
+        STATE.studentGroups[stt] = groupVal;
+    }
+    window.saveData('studentGroups', STATE.studentGroups);
+};
+// Hàm tự động cập nhật và phân bổ học sinh vào sơ đồ dựa theo Tổ đã chọn ở bảng danh sách
+window.updateStudentGroup = function(stt, groupVal) {
+    if(!STATE.studentGroups) STATE.studentGroups = {};
+    if(groupVal === "") {
+        delete STATE.studentGroups[stt];
+    } else {
+        STATE.studentGroups[stt] = groupVal;
+    }
+    window.saveData('studentGroups', STATE.studentGroups);
+
+    // Tự động phân bổ lại vị trí trên sơ đồ lớp
+    window.autoMapStudentsByGroup();
+};
+
+window.autoMapStudentsByGroup = function() {
+    let newMap = {};
+    for (let i = 1; i <= 48; i++) newMap['pos_' + i] = null;
+
+    let groups = { "Tổ 1": [], "Tổ 2": [], "Tổ 3": [], "Tổ 4": [], "Chưa chọn": [] };
+
+    // Gom học sinh theo đúng Tổ đã chọn
+    STATE.students.forEach((_, idx) => {
+        let stt = idx + 1;
+        let g = STATE.studentGroups && STATE.studentGroups[stt] ? STATE.studentGroups[stt] : "";
+        if (groups[g]) {
+            groups[g].push(stt);
+        } else {
+            groups["Chưa chọn"].push(stt);
+        }
+    });
+
+    // Cấu trúc phân bổ vị trí trên sơ đồ 2 dãy (mỗi tổ tương ứng với các cột trên sơ đồ)
+    // Tổ 1, 3 ở Dãy 1; Tổ 2, 4 ở Dãy 2
+    let groupColMapping = { "Tổ 1": 1, "Tổ 2": 2, "Tổ 3": 3, "Tổ 4": 4 };
+
+    ["Tổ 1", "Tổ 2", "Tổ 3", "Tổ 4"].forEach(groupName => {
+        let col = groupColMapping[groupName];
+        let members = groups[groupName];
+        
+        members.forEach((stt, index) => {
+            // Tính toán vị trí bàn theo hàng và cột của tổ
+            let rowIndex = Math.floor(index / 2);
+            let seatInPair = index % 2;
+            let targetPos = (rowIndex * 8) + (seatInPair * 4) + col;
+            
+            if (targetPos <= 48) {
+                newMap['pos_' + targetPos] = stt;
+            }
+        });
+    });
+
+    // Điền nốt các bạn chưa chọn tổ vào những ô còn trống
+    let unassigned = [...groups["Chưa chọn"]];
+    for (let i = 1; i <= 48; i++) {
+        if (!newMap['pos_' + i] && unassigned.length > 0) {
+            newMap['pos_' + i] = unassigned.shift();
+        }
+    }
+
+    STATE.map = newMap;
+    window.saveData('map', STATE.map);
+
+    // Cập nhật lại giao diện sơ đồ ngay lập tức
+    if (typeof window.renderSeatingMap === 'function') window.renderSeatingMap();
+    if (typeof window.renderAdminSeatingMap === 'function') window.renderAdminSeatingMap();
+};
+// Hàm cập nhật và phân bổ học sinh vào Tổ đồng thời cập nhật sơ đồ
+window.updateStudentGroup = function(stt, groupVal) {
+    if(!STATE.studentGroups) STATE.studentGroups = {};
+    if(groupVal === "") {
+        delete STATE.studentGroups[stt];
+    } else {
+        STATE.studentGroups[stt] = groupVal;
+    }
+    window.saveData('studentGroups', STATE.studentGroups);
+
+    // Tự động phân bổ lại vị trí trên sơ đồ lớp
+    window.autoMapStudentsByGroup();
+};
+
+window.autoMapStudentsByGroup = function() {
+    let newMap = {};
+    for (let i = 1; i <= 48; i++) newMap['pos_' + i] = null;
+
+    let groups = { "Tổ 1": [], "Tổ 2": [], "Tổ 3": [], "Tổ 4": [], "Chưa chọn": [] };
+
+    STATE.students.forEach((_, idx) => {
+        let stt = idx + 1;
+        let g = STATE.studentGroups && STATE.studentGroups[stt] ? STATE.studentGroups[stt] : "";
+        if (groups[g]) {
+            groups[g].push(stt);
+        } else {
+            groups["Chưa chọn"].push(stt);
+        }
+    });
+
+    let groupColMapping = { "Tổ 1": 1, "Tổ 2": 2, "Tổ 3": 3, "Tổ 4": 4 };
+
+    ["Tổ 1", "Tổ 2", "Tổ 3", "Tổ 4"].forEach(groupName => {
+        let col = groupColMapping[groupName];
+        let members = groups[groupName];
+        
+        members.forEach((stt, index) => {
+            let rowIndex = Math.floor(index / 2);
+            let seatInPair = index % 2;
+            let targetPos = (rowIndex * 8) + (seatInPair * 4) + col;
+            
+            if (targetPos <= 48) {
+                newMap['pos_' + targetPos] = stt;
+            }
+        });
+    });
+
+    let unassigned = [...groups["Chưa chọn"]];
+    for (let i = 1; i <= 48; i++) {
+        if (!newMap['pos_' + i] && unassigned.length > 0) {
+            newMap['pos_' + i] = unassigned.shift();
+        }
+    }
+
+    STATE.map = newMap;
+    window.saveData('map', STATE.map);
+
+    if (typeof window.renderSeatingMap === 'function') window.renderSeatingMap();
+    if (typeof window.renderAdminSeatingMap === 'function') window.renderAdminSeatingMap();
+};
 </script>
 </body>
 </html>
